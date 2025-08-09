@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route, useParams, useLocation, Outlet, NavLink, Link } from "react-router-dom";
 
 import MediaList from "./pages/MediaList";
@@ -35,23 +35,23 @@ function Navbar() {
         {/* Links for the current media */}
         <nav className="hidden md:flex items-center gap-2 ml-6">
           <NavLink
-            to={base}
+            to="/"
             end
             className={({ isActive }) => [linkBase, isActive ? linkActive : linkInactive].join(" ")}
           >
             Media
           </NavLink>
           <NavLink
-            to={`${base}/comments/unreplied`}
-            className={({ isActive }) => [linkBase, isActive ? linkActive : linkInactive].join(" ")}
-          >
-            Unreplied
-          </NavLink>
-          <NavLink
             to={`${base}/comments/all`}
             className={({ isActive }) => [linkBase, isActive ? linkActive : linkInactive].join(" ")}
           >
             All comments
+          </NavLink>
+          <NavLink
+            to={`${base}/comments/unreplied`}
+            className={({ isActive }) => [linkBase, isActive ? linkActive : linkInactive].join(" ")}
+          >
+            Unreplied
           </NavLink>
           <NavLink
             to={`${base}/auto-reply`}

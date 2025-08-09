@@ -118,7 +118,7 @@ export default function MediaActionsPage({ mediaId, caption = "" }: Props) {
                 }
                 className="h-9 px-4 rounded-full text-white text-sm font-medium bg-gradient-to-r from-indigo-500 to-blue-600 hover:brightness-95"
               >
-                Open unreplied list
+                Open unreplied comments
               </button>
             </div>
           </section>
