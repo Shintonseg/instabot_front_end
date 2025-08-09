@@ -1,15 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { fetchUnrepliedComments, postCommentReply } from "../services/instagram";
 import type { CommentReplyRecord } from "../types/instagram";
 
 export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
+  // caption passed from navigation state (fallback to empty)
+  const location = useLocation();
+  const caption = (location.state?.caption as string) ?? "";
+
   const [comments, setComments] = useState<CommentReplyRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replyMap, setReplyMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadComments();
+    // reset inputs when media changes
+    setReplyMap({});
   }, [mediaId]);
 
   async function loadComments() {
@@ -31,22 +39,87 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
   async function handleSend(commentId: string) {
     const message = replyMap[commentId]?.trim();
     if (!message) return;
-
     try {
+      setSending(true);
       await postCommentReply(commentId, message);
       setReplyMap((prev) => ({ ...prev, [commentId]: "" }));
-      // Refresh list
       await loadComments();
     } catch (err: any) {
       alert("Failed to send reply: " + err.message);
+    } finally {
+      setSending(false);
     }
   }
 
+  // --- Send All: gather non-empty replies and submit in parallel
+  async function handleSendAll() {
+    const entries = Object.entries(replyMap)
+      .map(([commentId, msg]) => [commentId, msg?.trim()] as const)
+      .filter(([, msg]) => !!msg);
+
+    if (entries.length === 0) return;
+
+    setSending(true);
+    try {
+      const results = await Promise.allSettled(
+        entries.map(([commentId, msg]) => postCommentReply(commentId, msg!))
+      );
+
+      // optional: basic toast/summary
+      const ok = results.filter(r => r.status === "fulfilled").length;
+      const fail = results.length - ok;
+      if (fail > 0) {
+        alert(`Sent ${ok}, failed ${fail}.`);
+      }
+
+      // clear only the ones we sent
+      setReplyMap((prev) => {
+        const next = { ...prev };
+        for (const [commentId] of entries) next[commentId] = "";
+        return next;
+      });
+
+      await loadComments();
+    } finally {
+      setSending(false);
+    }
+  }
+
+  const canSendAll = useMemo(
+    () => Object.values(replyMap).some(v => (v ?? "").trim().length > 0),
+    [replyMap]
+  );
+
   return (
-    <div className="p-6">
-      <h2 className="text-xl font-semibold mb-4">
-        Comments for media <span className="text-blue-600">{mediaId}</span>
-      </h2>
+    <div className="p-6 space-y-4">
+      {/* Header with ID + wrapped caption */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-semibold">
+            Comments for media{" "}
+            <span className="text-blue-600">{mediaId}</span>
+          </h2>
+          {caption && (
+            <p className="mt-1 text-sm text-gray-700 max-w-5xl whitespace-pre-wrap break-words">
+              {caption}
+            </p>
+          )}
+        </div>
+
+        <button
+          onClick={handleSendAll}
+          disabled={!canSendAll || sending}
+          className={[
+            "h-9 px-4 rounded-md text-white text-sm",
+            canSendAll && !sending
+              ? "bg-blue-600 hover:bg-blue-700"
+              : "bg-gray-300 cursor-not-allowed",
+          ].join(" ")}
+          title={canSendAll ? "Send all typed replies" : "Type at least one reply"}
+        >
+          {sending ? "Sending…" : "Send All"}
+        </button>
+      </div>
 
       {loading && <div className="text-sm">Loading comments…</div>}
       {error && <div className="text-sm text-red-600">{error}</div>}
@@ -83,7 +156,13 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
                   <td className="border px-3 py-2 text-center">
                     <button
                       onClick={() => handleSend(c.commentId)}
-                      className="px-3 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 text-sm"
+                      disabled={sending || !(replyMap[c.commentId]?.trim())}
+                      className={[
+                        "px-3 py-1 rounded text-white text-sm",
+                        replyMap[c.commentId]?.trim()
+                          ? "bg-blue-600 hover:bg-blue-700"
+                          : "bg-gray-300 cursor-not-allowed",
+                      ].join(" ")}
                     >
                       Send
                     </button>

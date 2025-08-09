@@ -54,7 +54,7 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
       setFlashId(m.id);
       setTimeout(() => setFlashId(null), 1000);
     }
-    navigate(`/comments/${m.id}`);
+    navigate(`/comments/${m.id}`, { state: { caption: m.caption ?? "" } });
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
