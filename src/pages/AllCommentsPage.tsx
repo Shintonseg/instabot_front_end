@@ -8,7 +8,7 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(25);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); 
   const [repliedFilter, setRepliedFilter] = useState<"" | "true" | "false">("");
 
   useEffect(() => {
@@ -43,6 +43,7 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
           value={repliedFilter}
           onChange={(e) => { setPage(0); setRepliedFilter(e.target.value as any); }}
           className="border rounded px-2 py-1"
+          disabled={loading}
         >
           <option value="">All</option>
           <option value="false">Unreplied</option>
@@ -54,9 +55,12 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
           value={size}
           onChange={(e) => { setPage(0); setSize(Number(e.target.value)); }}
           className="border rounded px-2 py-1"
+          disabled={loading}
         >
           {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
         </select>
+
+        {loading && <span className="ml-2 animate-pulse">Loading…</span>}
       </div>
 
       <div className="overflow-x-auto">
@@ -71,15 +75,27 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => (
-              <tr key={r.id} className="hover:bg-gray-50">
-                <td className="border px-3 py-2">{r.username}</td>
-                <td className="border px-3 py-2">{r.text}</td>
-                <td className="border px-3 py-2">{r.replied ? "Yes" : "No"}</td>
-                <td className="border px-3 py-2">{r.repliedAt ?? "-"}</td>
-                <td className="border px-3 py-2">{r.replies?.length ?? 0}</td>
-              </tr>
-            ))}
+            {loading && rows.length === 0 ? (
+              [...Array(3)].map((_, i) => (
+                <tr key={i} className="animate-pulse">
+                  {[...Array(5)].map((__, j) => (
+                    <td key={j} className="border px-3 py-2">
+                      <div className="h-3 w-24 bg-gray-200 rounded" />
+                    </td>
+                  ))}
+                </tr>
+              ))
+            ) : (
+              rows.map((r) => (
+                <tr key={r.id} className="hover:bg-gray-50">
+                  <td className="border px-3 py-2">{r.username}</td>
+                  <td className="border px-3 py-2">{r.text}</td>
+                  <td className="border px-3 py-2">{r.replied ? "Yes" : "No"}</td>
+                  <td className="border px-3 py-2">{r.repliedAt ?? "-"}</td>
+                  <td className="border px-3 py-2">{r.replies?.length ?? 0}</td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
@@ -87,7 +103,7 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
       {/* pagination */}
       <div className="flex items-center gap-2 text-sm">
         <button
-          disabled={page === 0}
+          disabled={loading || page === 0}
           onClick={() => setPage((p) => Math.max(0, p - 1))}
           className="px-3 py-1 rounded border bg-white disabled:opacity-50"
         >
@@ -95,7 +111,7 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
         </button>
         <div>Page {page + 1} / {Math.max(1, totalPages)}</div>
         <button
-          disabled={page + 1 >= totalPages}
+          disabled={loading || page + 1 >= totalPages}
           onClick={() => setPage((p) => p + 1)}
           className="px-3 py-1 rounded border bg-white disabled:opacity-50"
         >
