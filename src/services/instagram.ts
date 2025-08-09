@@ -1,8 +1,6 @@
 import { api } from "../lib/apiClient";
 import type {
-  InstagramMediaResponseDto,
-  Media,
-  Page,
+  InstagramMediaResponseDto,Media,Page,CommentReplyPage,ReplyRequestDto
 } from "../types/instagram";
 
 // Adapt backend DTO -> UI Page<Media>
@@ -19,4 +17,20 @@ export async function fetchMedia(instagramId: string): Promise<Page<Media>> {
     `/auto/instagram-media/${instagramId}`
   );
   return adaptMediaPage(data);
+}
+
+// Get unreplied comments for a media
+export async function fetchUnrepliedComments(mediaId: string, page = 0, size = 25) {
+  const { data } = await api.get<CommentReplyPage>(
+    `/auto/comments/unreplied`,
+    { params: { mediaId, page, size } }
+  );
+  return data;
+}
+
+// Post reply to a comment
+export async function postCommentReply(commentId: string, message: string) {
+  const body: ReplyRequestDto = { message };
+  const { data } = await api.post(`/auto/comments/${commentId}/reply`, body);
+  return data;
 }

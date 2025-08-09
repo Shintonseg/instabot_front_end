@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchMedia } from "../services/instagram";
 import type { Media } from "../types/instagram";
+import { useNavigate } from "react-router-dom";
 
 export default function MediaList({ instagramId }: { instagramId: string }) {
   const [media, setMedia] = useState<Media[]>([]);
@@ -42,6 +43,7 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
       .slice(0, 8);
   }, [media, query]);
 
+  const navigate = useNavigate();
   function selectMedia(m: Media) {
     setSelectedId(m.id);
     setOpen(false);
@@ -52,6 +54,7 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
       setFlashId(m.id);
       setTimeout(() => setFlashId(null), 1000);
     }
+    navigate(`/comments/${m.id}`);
   }
 
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
