@@ -1,3 +1,4 @@
+// src/pages/MediaList.tsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fetchMedia } from "../services/instagram";
 import type { Media } from "../types/instagram";
@@ -16,8 +17,8 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
 
-  // refs to scroll selected card into view
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     (async () => {
@@ -27,7 +28,7 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
         setMedia(page.items);
         setNext(page.next ?? null);
       } catch (e: any) {
-        setError(e.message);
+        setError(e.message ?? "Failed to load media");
       } finally {
         setLoading(false);
       }
@@ -38,12 +39,9 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return media
-      .filter((m) => (m.caption ?? "").toLowerCase().includes(q))
-      .slice(0, 8);
+    return media.filter(m => (m.caption ?? "").toLowerCase().includes(q)).slice(0, 8);
   }, [media, query]);
 
-  const navigate = useNavigate();
   function selectMedia(m: Media) {
     setSelectedId(m.id);
     setOpen(false);
@@ -52,7 +50,7 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
     if (node) {
       node.scrollIntoView({ behavior: "smooth", block: "center" });
       setFlashId(m.id);
-      setTimeout(() => setFlashId(null), 1000);
+      setTimeout(() => setFlashId(null), 900);
     }
     navigate(`/media/${m.id}`, { state: { caption: m.caption ?? "" } });
   }
@@ -63,13 +61,12 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
       return;
     }
     if (!suggestions.length) return;
-
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIdx((i) => (i + 1) % suggestions.length);
+      setActiveIdx(i => (i + 1) % suggestions.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIdx((i) => (i - 1 + suggestions.length) % suggestions.length);
+      setActiveIdx(i => (i - 1 + suggestions.length) % suggestions.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
       const target = suggestions[activeIdx] ?? suggestions[0];
@@ -85,28 +82,33 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
     setActiveIdx(-1);
   }
 
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Media</h2>
-        {media.length > 0 && (
-          <span className="text-xs text-gray-500">{media.length} items</span>
-        )}
-      </div>
+  // tiny helper for avatar initials
+  const initials = (m: Media) =>
+    (m.caption?.trim()?.[0] ?? m.id.slice(-2)).toString().toUpperCase();
 
-      <div className="bg-white rounded-2xl border shadow-sm overflow-hidden">
-        {/* Search */}
-        <div className="p-3 border-b bg-gray-50 relative">
-          <div className="relative">
+  return (
+    <section className="min-h-screen bg-[#FAFAFA]">
+      {/* Top bar with IG gradient title + pill search */}
+      <div className="sticky top-0 z-10 backdrop-blur bg-white/80 border-b">
+        <div className="mx-auto max-w-2xl px-4 py-3 flex items-center gap-3">
+          <h2 className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500">
+            Media
+          </h2>
+          {media.length > 0 && (
+            <span className="text-xs text-gray-500">{media.length} items</span>
+          )}
+          <div className="ml-auto w-full sm:w-96 relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2">
+              <svg viewBox="0 0 24 24" className="h-5 w-5 text-gray-400">
+                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="1.5" />
+              </svg>
+            </span>
             <input
-              className="w-full rounded-lg border bg-white px-3 py-2 pr-8 text-sm outline-none focus:ring-2 focus:ring-blue-200"
+              className="w-full rounded-full border border-gray-200 bg-gray-50 pl-10 pr-10 py-2 text-sm outline-none focus:ring-2 focus:ring-pink-500"
               placeholder="Search by caption…"
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                setOpen(true);
-                setActiveIdx(-1);
-              }}
+              onChange={(e) => { setQuery(e.target.value); setOpen(true); setActiveIdx(-1); }}
               onFocus={() => query && setOpen(true)}
               onKeyDown={onKeyDown}
             />
@@ -114,16 +116,17 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
               <button
                 type="button"
                 onClick={clearSearch}
-                className="absolute inset-y-0 right-2 flex items-center text-gray-400 hover:text-gray-700"
+                className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-700"
+                aria-label="Clear search"
               >
                 ✖
               </button>
             )}
 
-            {/* Suggestions dropdown */}
+            {/* Suggestions */}
             {open && suggestions.length > 0 && (
               <div
-                className="absolute z-10 mt-1 w-full rounded-xl border bg-white shadow-lg max-h-64 overflow-auto"
+                className="absolute z-10 mt-2 w-full rounded-2xl border border-gray-200 bg-white shadow-lg max-h-64 overflow-auto"
                 role="listbox"
               >
                 {suggestions.map((s, idx) => {
@@ -133,8 +136,8 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
                       type="button"
                       key={s.id}
                       className={[
-                        "w-full text-left px-3 py-2 text-sm",
-                        isActive ? "bg-blue-50" : "hover:bg-gray-50",
+                        "w-full text-left px-4 py-2 text-sm",
+                        isActive ? "bg-pink-50" : "hover:bg-gray-50",
                       ].join(" ")}
                       onMouseEnter={() => setActiveIdx(idx)}
                       onMouseDown={(e) => e.preventDefault()}
@@ -142,12 +145,8 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
                       role="option"
                       aria-selected={isActive}
                     >
-                      <span className="line-clamp-2">
-                        {s.caption || "(no caption)"}
-                      </span>
-                      <span className="block text-[11px] text-gray-500 mt-0.5">
-                        ID: {s.id}
-                      </span>
+                      <span className="line-clamp-2">{s.caption || "(no caption)"}</span>
+                      <span className="block text-[11px] text-gray-500 mt-0.5">ID: {s.id}</span>
                     </button>
                   );
                 })}
@@ -155,16 +154,15 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
             )}
           </div>
         </div>
+      </div>
 
-        {/* List */}
-        <div className="max-h-[70vh] overflow-auto p-4 space-y-3">
+      {/* Feed list */}
+      <div className="mx-auto max-w-2xl px-4 py-4">
+        <div className="space-y-3">
           {loading && (
-            <div className="space-y-2">
-              {[...Array(6)].map((_, i) => (
-                <div
-                  key={i}
-                  className="h-14 rounded-xl bg-gray-100 animate-pulse"
-                />
+            <div className="space-y-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-16 rounded-2xl bg-white border border-gray-100 shadow-sm animate-pulse" />
               ))}
             </div>
           )}
@@ -180,36 +178,53 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
               return (
                 <div
                   key={m.id}
-                  ref={(el) => {
-                    itemRefs.current[m.id] = el;
-                  }}
+                  ref={(el) => { itemRefs.current[m.id] = el; }}
                   className={[
-                    "rounded-2xl border p-4 transition",
-                    "bg-white hover:bg-gray-50",
-                    isSelected
-                      ? "border-blue-500 ring-2 ring-blue-100"
-                      : "border-gray-200",
+                    "rounded-2xl border border-gray-100 bg-white shadow-sm transition",
+                    "hover:shadow",
+                    isSelected ? "ring-2 ring-pink-200" : "",
                     isFlash ? "animate-pulse" : "",
                   ].join(" ")}
                 >
-                  <div className="text-sm font-medium line-clamp-2">
-                    {m.caption || "(no caption)"}
+                  <div className="p-4 flex items-start gap-3">
+                    {/* IG-like avatar ring */}
+                    <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-[2px] shrink-0">
+                      <div className="h-full w-full rounded-full bg-white grid place-items-center">
+                        <div className="h-9 w-9 rounded-full bg-gray-200 grid place-items-center text-xs font-semibold text-gray-700">
+                          {initials(m)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* content */}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-gray-900 line-clamp-2">
+                        {m.caption || "(no caption)"}
+                      </div>
+                      <div className="mt-1 text-[11px] text-gray-500">ID: {m.id}</div>
+                    </div>
+
+                    {/* action: open comments */}
+                    <button
+                      onClick={() => selectMedia(m)}
+                      className="ml-2 rounded-full px-3 py-1 text-sm font-medium text-pink-600 hover:bg-pink-50"
+                    >
+                      Comments
+                    </button>
                   </div>
-                  <div className="mt-1 text-xs text-gray-500">ID: {m.id}</div>
                 </div>
               );
             })}
 
           {next && (
             <div className="pt-2 text-xs text-gray-500">
-              More available (backend returned paging). Add <code>?after=…</code>{" "}
-              to enable “Load more”.
+              More available via paging (add <code>?after=…</code> for Load more).
             </div>
           )}
         </div>
-      </div>
 
-      {error && <div className="text-sm text-red-600">{error}</div>}
+        {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
+      </div>
     </section>
   );
 }

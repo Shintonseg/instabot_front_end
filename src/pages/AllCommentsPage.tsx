@@ -3,22 +3,25 @@ import { useEffect, useState } from "react";
 import { fetchAllCommentsFromDb } from "../services/instagram";
 import type { CommentReplyRecord } from "../types/instagram";
 
+type Paged<T> = { content: T[]; totalPages: number };
+
 export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
   const [rows, setRows] = useState<CommentReplyRecord[]>([]);
   const [page, setPage] = useState(0);
   const [size, setSize] = useState(25);
   const [totalPages, setTotalPages] = useState(0);
-  const [loading, setLoading] = useState(false); 
+  const [loading, setLoading] = useState(false);
   const [repliedFilter, setRepliedFilter] = useState<"" | "true" | "false">("");
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId, page, size, repliedFilter]);
 
   async function load() {
     setLoading(true);
     try {
-      const data = await fetchAllCommentsFromDb(
+      const data: Paged<CommentReplyRecord> = await fetchAllCommentsFromDb(
         mediaId,
         page,
         size,
@@ -32,17 +35,18 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
   }
 
   return (
-    <div className="p-6 space-y-4">
-      <h2 className="text-xl font-semibold">
-        All comments (DB) • <span className="text-blue-600">{mediaId}</span>
+    <div className="min-h-screen bg-[#FAFAFA] p-6">
+      <h2 className="text-xl font-semibold mb-3">
+        All comments (DB) • <span className="text-pink-600">{mediaId}</span>
       </h2>
 
-      <div className="flex items-center gap-3 text-sm">
+      {/* controls */}
+      <div className="flex items-center gap-3 text-sm mb-4">
         <label>Filter:</label>
         <select
           value={repliedFilter}
           onChange={(e) => { setPage(0); setRepliedFilter(e.target.value as any); }}
-          className="border rounded px-2 py-1"
+          className="rounded-full border border-gray-300 px-3 py-1 focus:ring-2 focus:ring-pink-500"
           disabled={loading}
         >
           <option value="">All</option>
@@ -54,7 +58,7 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
         <select
           value={size}
           onChange={(e) => { setPage(0); setSize(Number(e.target.value)); }}
-          className="border rounded px-2 py-1"
+          className="rounded-full border border-gray-300 px-3 py-1 focus:ring-2 focus:ring-pink-500"
           disabled={loading}
         >
           {[10, 25, 50, 100].map(n => <option key={n} value={n}>{n}</option>)}
@@ -63,49 +67,66 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
         {loading && <span className="ml-2 animate-pulse">Loading…</span>}
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-200 text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="border px-3 py-2 text-left">Username</th>
-              <th className="border px-3 py-2 text-left">Comment</th>
-              <th className="border px-3 py-2 text-left">Replied</th>
-              <th className="border px-3 py-2 text-left">Replied At</th>
-              <th className="border px-3 py-2 text-left">Replies</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && rows.length === 0 ? (
-              [...Array(3)].map((_, i) => (
-                <tr key={i} className="animate-pulse">
-                  {[...Array(5)].map((__, j) => (
-                    <td key={j} className="border px-3 py-2">
-                      <div className="h-3 w-24 bg-gray-200 rounded" />
-                    </td>
-                  ))}
-                </tr>
-              ))
-            ) : (
-              rows.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="border px-3 py-2">{r.username}</td>
-                  <td className="border px-3 py-2">{r.text}</td>
-                  <td className="border px-3 py-2">{r.replied ? "Yes" : "No"}</td>
-                  <td className="border px-3 py-2">{r.repliedAt ?? "-"}</td>
-                  <td className="border px-3 py-2">{r.replies?.length ?? 0}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* list */}
+      <div className="space-y-3 max-w-2xl">
+        {loading && rows.length === 0 && (
+          Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-24 rounded-2xl bg-white border border-gray-100 shadow-sm animate-pulse" />
+          ))
+        )}
+
+        {!loading && rows.length === 0 && (
+          <div className="text-sm text-gray-500">No comments found.</div>
+        )}
+
+        {!loading && rows.map((r) => (
+          <article key={r.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-start gap-3">
+              {/* IG-like avatar ring */}
+              <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-[2px] shrink-0">
+                <div className="h-full w-full rounded-full bg-white grid place-items-center">
+                  <div className="h-9 w-9 rounded-full bg-gray-200 grid place-items-center text-xs font-semibold text-gray-700">
+                    {r.username.slice(0, 2).toUpperCase()}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 min-w-0">
+                {/* main comment row */}
+                <div className="text-sm">
+                  <span className="font-semibold">{r.username}</span>{" "}
+                  <span className="text-gray-800">{r.text}</span>
+                </div>
+                <div className="mt-1 text-xs">
+                  {r.replied
+                    ? <span className="text-emerald-600 font-medium">Replied</span>
+                    : <span className="text-gray-500">Not replied</span>}
+                </div>
+
+                {/* replies (show texts instead of repliedAt) */}
+                {r.replies && r.replies.length > 0 && (
+                  <div className="mt-3 space-y-2 pl-4 border-l border-gray-200">
+                    {r.replies.map(rep => (
+                      <div key={rep.id} className="text-sm">
+                        <span className="font-semibold text-pink-600">You</span>{" "}
+                        <span className="text-gray-800">{rep.text}</span>
+                        <div className="text-[11px] text-gray-400">{rep.timestamp}</div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </article>
+        ))}
       </div>
 
       {/* pagination */}
-      <div className="flex items-center gap-2 text-sm">
+      <div className="flex items-center gap-2 text-sm mt-6">
         <button
           disabled={loading || page === 0}
           onClick={() => setPage((p) => Math.max(0, p - 1))}
-          className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+          className="px-4 py-1 rounded-full border bg-white disabled:opacity-50"
         >
           Prev
         </button>
@@ -113,7 +134,7 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
         <button
           disabled={loading || page + 1 >= totalPages}
           onClick={() => setPage((p) => p + 1)}
-          className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+          className="px-4 py-1 rounded-full border bg-white disabled:opacity-50"
         >
           Next
         </button>

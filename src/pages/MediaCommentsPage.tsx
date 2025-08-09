@@ -1,10 +1,7 @@
+// src/pages/MediaCommentsPage.tsx
 import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
-import {
-  fetchUnrepliedComments,
-  postCommentReply,
-  fetchAndStoreAllComments,
-} from "../services/instagram";
+import { fetchUnrepliedComments, postCommentReply } from "../services/instagram";
 import type { CommentReplyRecord } from "../types/instagram";
 
 type Toast = { id: number; text: string; tone?: "ok" | "warn" };
@@ -15,11 +12,9 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
 
   const [comments, setComments] = useState<CommentReplyRecord[]>([]);
   const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);      // ⬅ syncing all comments
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [replyMap, setReplyMap] = useState<Record<string, string>>({});
-  const [limit, setLimit] = useState<number>(50);     // ⬅ adjustable limit for fetch-all
   const [toasts, setToasts] = useState<Toast[]>([]);
   let toastId = 0;
 
@@ -35,6 +30,7 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
   useEffect(() => {
     loadComments();
     setReplyMap({});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mediaId]);
 
   async function loadComments() {
@@ -49,25 +45,10 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
     }
   }
 
-  // ⬇ NEW: trigger backend to fetch & store ALL comments (then refresh)
-  async function handleFetchAll() {
-    setSyncing(true);
-    try {
-      const res = await fetchAndStoreAllComments(mediaId, limit);
-      pushToast(`Saved/updated ${res.savedOrUpdated} comments`);
-      await loadComments();
-    } catch (e: any) {
-      pushToast(`Failed to fetch all comments: ${e.message}`, "warn");
-    } finally {
-      setSyncing(false);
-    }
-  }
-
   function handleChange(commentId: string, value: string) {
     setReplyMap((prev) => ({ ...prev, [commentId]: value }));
   }
 
-  // single send -> per-username toast
   async function handleSend(commentId: string) {
     const message = replyMap[commentId]?.trim();
     if (!message) return;
@@ -84,7 +65,6 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
     }
   }
 
-  // bulk send -> ONE summary toast
   async function handleSendAll() {
     const entries = Object.entries(replyMap)
       .map(([commentId, msg]) => [commentId, msg?.trim()] as const)
@@ -125,8 +105,12 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
     [replyMap]
   );
 
+  // helper for avatar initials
+  const initials = (name: string) =>
+    (name?.trim()?.slice(0, 2) || "US").toUpperCase();
+
   return (
-    <div className="p-6 space-y-4">
+    <div className="min-h-screen bg-[#FAFAFA] p-6">
       {/* Toasts */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {toasts.map((t) => (
@@ -142,49 +126,29 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
         ))}
       </div>
 
-      {/* Header with caption + actions */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-        <div>
+      {/* Header */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between mb-3">
+        <div className="max-w-3xl">
           <h2 className="text-xl font-semibold">
-            Comments for media <span className="text-blue-600">{mediaId}</span>
+            Comments for media{" "}
+            <span className="text-pink-600">{mediaId}</span>
           </h2>
           {caption && (
-            <p className="mt-1 text-sm text-gray-700 max-w-5xl whitespace-pre-wrap break-words">
+            <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap break-words">
               {caption}
             </p>
           )}
         </div>
 
-        {/* Action bar: limit + Fetch All + Send All */}
+        {/* Actions: Send All */}
         <div className="flex items-center gap-2">
-          <label className="text-sm text-gray-600">Limit</label>
-          <input
-            type="number"
-            min={1}
-            max={500}
-            value={limit}
-            onChange={(e) => setLimit(Math.max(1, Math.min(500, Number(e.target.value) || 1)))}
-            className="w-20 border rounded px-2 py-1 text-sm"
-          />
-          <button
-            onClick={handleFetchAll}
-            disabled={syncing}
-            className={[
-              "h-9 px-3 rounded-md text-white text-sm",
-              syncing ? "bg-gray-300 cursor-not-allowed" : "bg-sky-600 hover:bg-sky-700",
-            ].join(" ")}
-            title="Fetch & store all comments for this media"
-          >
-            {syncing ? "Fetching…" : "Fetch all comments"}
-          </button>
-
           <button
             onClick={handleSendAll}
             disabled={!canSendAll || sending}
             className={[
-              "h-9 px-4 rounded-md text-white text-sm",
+              "h-9 px-4 rounded-full text-white text-sm font-medium",
               canSendAll && !sending
-                ? "bg-blue-600 hover:bg-blue-700"
+                ? "bg-gradient-to-r from-indigo-500 to-blue-600 hover:brightness-95"
                 : "bg-gray-300 cursor-not-allowed",
             ].join(" ")}
             title={canSendAll ? "Send all typed replies" : "Type at least one reply"}
@@ -194,66 +158,75 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
         </div>
       </div>
 
-      {loading && <div className="text-sm">Loading comments…</div>}
-      {error && <div className="text-sm text-red-600">{error}</div>}
-
-      {!loading && comments.length === 0 && (
-        <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 shadow-sm flex items-start gap-3">
-          <div className="text-lg leading-none">✅</div>
-          <div className="text-sm">
-            <div className="font-semibold">No unreplied comments found</div>
-            <div className="opacity-80">
-              Great job—looks like you’re all caught up for this media!
-            </div>
+      {/* List (IG-style cards) */}
+      <div className="max-w-3xl space-y-3">
+        {loading && (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-24 rounded-2xl bg-white border border-gray-100 shadow-sm animate-pulse"
+              />
+            ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {!loading && comments.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="min-w-full border border-gray-200 text-sm">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="border px-3 py-2 text-left">Username</th>
-                <th className="border px-3 py-2 text-left">Comment</th>
-                <th className="border px-3 py-2 text-left">Reply</th>
-                <th className="border px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {comments.map((c) => (
-                <tr key={c.id} className="hover:bg-gray-50">
-                  <td className="border px-3 py-2">{c.username}</td>
-                  <td className="border px-3 py-2">{c.text}</td>
-                  <td className="border px-3 py-2">
-                    <input
-                      type="text"
-                      value={replyMap[c.commentId] ?? ""}
-                      onChange={(e) => handleChange(c.commentId, e.target.value)}
-                      placeholder="Type reply..."
-                      className="w-full border rounded px-2 py-1 text-sm"
-                    />
-                  </td>
-                  <td className="border px-3 py-2 text-center">
-                    <button
-                      onClick={() => handleSend(c.commentId)}
-                      disabled={sending || !(replyMap[c.commentId]?.trim())}
-                      className={[
-                        "px-3 py-1 rounded text-white text-sm",
-                        replyMap[c.commentId]?.trim()
-                          ? "bg-blue-600 hover:bg-blue-700"
-                          : "bg-gray-300 cursor-not-allowed",
-                      ].join(" ")}
-                    >
-                      Send
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        {!loading && error && (
+          <div className="text-sm text-red-600">{error}</div>
+        )}
+
+        {!loading && !error && comments.length === 0 && (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 shadow-sm">
+            ✅ No unreplied comments found.
+          </div>
+        )}
+
+        {!loading && !error && comments.map((c) => (
+          <article key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <div className="flex items-start gap-3">
+              {/* IG-like avatar ring */}
+              <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-[2px] shrink-0">
+                <div className="h-full w-full rounded-full bg-white grid place-items-center">
+                  <div className="h-9 w-9 rounded-full bg-gray-200 grid place-items-center text-xs font-semibold text-gray-700">
+                    {initials(c.username)}
+                  </div>
+                </div>
+              </div>
+
+              {/* content */}
+              <div className="flex-1 min-w-0">
+                <div className="text-sm">
+                  <span className="font-semibold">{c.username}</span>{" "}
+                  <span className="text-gray-800">{c.text}</span>
+                </div>
+
+                {/* reply input row */}
+                <div className="mt-3 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={replyMap[c.commentId] ?? ""}
+                    onChange={(e) => handleChange(c.commentId, e.target.value)}
+                    placeholder="Reply…"
+                    className="flex-1 rounded-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 outline-none"
+                  />
+                  <button
+                    onClick={() => handleSend(c.commentId)}
+                    disabled={sending || !(replyMap[c.commentId]?.trim())}
+                    className={[
+                      "px-4 py-2 rounded-full text-white text-sm font-medium whitespace-nowrap",
+                      replyMap[c.commentId]?.trim()
+                        ? "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:brightness-95"
+                        : "bg-gray-300 cursor-not-allowed",
+                    ].join(" ")}
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
   );
 }
