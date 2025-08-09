@@ -6,12 +6,12 @@ export const api = axios.create({
 });
 
 api.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  (r) => r,
+  (err) => {
     const msg =
-      error?.response?.data?.message ||
-      error?.response?.data?.error ||
-      error.message ||
+      err?.response?.data?.message ||
+      err?.response?.data?.error ||
+      err.message ||
       "Network error";
     return Promise.reject(new Error(msg));
   }
