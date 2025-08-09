@@ -89,6 +89,7 @@ export default function MediaActionsPage({ mediaId, caption = "" }: Props) {
           >
             Open unreplied list
           </button>
+
         </div>
 
         {/* Card 3: Send auto reply */}
@@ -98,7 +99,7 @@ export default function MediaActionsPage({ mediaId, caption = "" }: Props) {
             Configure rules/keywords to auto-reply to new comments.
           </p>
           <button
-            onClick={() => alert("Auto-reply screen coming next")}
+            onClick={() => navigate(`/media/${mediaId}/auto-reply`, { state: { caption } })}
             className="h-9 px-4 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-sm"
           >
             Open auto-reply

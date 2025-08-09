@@ -50,3 +50,13 @@ export async function postCommentReply(commentId: string, message: string) {
   const { data } = await api.post(`/auto/comments/${commentId}/reply`, body);
   return data;
 }
+
+// Auto-reply pending comments (global/process-wide)
+export async function autoReplyPending(limit: number, commentKeyword: string, replyMessage: string) {
+  const { data } = await api.post<{ processed: number }>(
+    `/auto/comments/reply`,
+    null, // body is not used; params are in query
+    { params: { limit, commentKeyword, replyMessage } }
+  );
+  return data; // { processed }
+}
