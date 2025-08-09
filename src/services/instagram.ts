@@ -5,23 +5,16 @@ import type {
   Page,
 } from "../types/instagram";
 
-// Adapter: DTO -> Page<Media>
+// Adapt backend DTO -> UI Page<Media>
 function adaptMediaPage(dto: InstagramMediaResponseDto): Page<Media> {
-  const items: Media[] = (dto.data ?? []).map((m) => ({
-    id: m.id,
-    caption: m.caption ?? null,
-  }));
-  const next =
-    dto.paging?.cursors?.after ??
-    dto.paging?.next ??
-    null;
-
-  return { items, next };
+  return {
+    items: (dto.data ?? []).map(m => ({ id: m.id, caption: m.caption ?? null })),
+    next: dto.paging?.cursors?.after ?? dto.paging?.next ?? null,
+  };
 }
 
-// NOTE: Your controller doesn't accept ?after right now,
-// so we call it without a query param.
-export async function fetchMedia(instagramId: string) {
+/** GET /auto/instagram-media/{instagramId} */
+export async function fetchMedia(instagramId: string): Promise<Page<Media>> {
   const { data } = await api.get<InstagramMediaResponseDto>(
     `/auto/instagram-media/${instagramId}`
   );

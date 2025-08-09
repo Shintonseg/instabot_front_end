@@ -1,4 +1,4 @@
-// Backend DTOs (exactly matching your Java classes)
+// === Backend DTOs (mirror your Java classes) ===
 export interface InstagramMedia {
   id: string;
   caption: string | null;
@@ -15,7 +15,7 @@ export interface InstagramMediaResponseDto {
   };
 }
 
-// UI-friendly shapes
+// === UI-friendly shape ===
 export type Media = {
   id: string;
   caption?: string | null;

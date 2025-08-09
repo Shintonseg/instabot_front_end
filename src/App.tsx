@@ -1,8 +1,16 @@
+import MediaList from "./pages/MediaList";
+
 export default function App() {
+  const instagramId = "17841464719859291"; // replace with your real mapping
   return (
-    <div className="p-6 bg-red-100">
-      <h1 className="text-5xl font-extrabold text-blue-600">Insta Automation</h1>
-      <p className="mt-4 text-lg text-gray-700">Tailwind is now working!</p>
+    <div className="min-h-screen">
+      <header className="px-6 py-4 border-b bg-white">
+        <h1 className="text-3xl font-bold tracking-tight">Insta Automation</h1>
+      </header>
+
+      <main className="max-w-6xl mx-auto p-4 md:p-6">
+        <MediaList instagramId={instagramId} />
+      </main>
     </div>
   );
 }
