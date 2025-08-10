@@ -133,7 +133,6 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
             Comments for media{" "}
             <span className="text-pink-600">{mediaId}</span>
             <span className="ml-4 text-gray-600 text-lg">
-              Total: {comments.length}
             </span>
           </h2>
           {caption && (

@@ -165,8 +165,9 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
       {/* Reels grid */}
       <div ref={gridRef} className="mx-auto max-w-6xl px-4 py-4">
         {loading && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-            {Array.from({ length: 8 }).map((_, i) => (
+          // ✅ 3 columns on small screens
+          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {Array.from({ length: 9 }).map((_, i) => (
               <div key={i} className="relative rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
                 <div className="w-full pb-[177.78%] bg-gray-100 animate-pulse" />
               </div>
@@ -179,7 +180,8 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
         )}
 
         {!loading && filtered.length > 0 && (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          // ✅ 3 columns on small screens
+          <div className="grid grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-3">
             {filtered.map((m) => {
               const thumb = m.thumbnail_url ?? m.media_url ?? undefined;
               return (

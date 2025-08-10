@@ -159,7 +159,7 @@ export default function AutoReplyPage({ mediaId, caption = "" }: Props) {
                   loading || !valid ? "bg-[#B2DFFC] cursor-not-allowed" : "bg-[#0095F6] hover:bg-[#1877F2]",
                 ].join(" ")}
               >
-                {loading ? "Processing…" : "Run auto-reply"}
+                {loading ? "Processing…" : "Send auto-reply"}
               </button>
               <button
                 type="button"
