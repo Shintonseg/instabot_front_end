@@ -118,7 +118,7 @@ export default function MediaActionsPage({ mediaId, caption = "" }: Props) {
                 }
                 className="h-9 px-4 rounded-full text-white text-sm font-medium bg-gradient-to-r from-indigo-500 to-blue-600 hover:brightness-95"
               >
-                Open unreplied comments
+                Unreplied comments
               </button>
             </div>
           </section>
@@ -140,7 +140,7 @@ export default function MediaActionsPage({ mediaId, caption = "" }: Props) {
                 }
                 className="h-9 px-4 rounded-full text-white text-sm font-medium bg-gradient-to-r from-emerald-500 to-teal-600 hover:brightness-95"
               >
-                Open auto-reply
+                Send auto-reply
               </button>
             </div>
           </section>

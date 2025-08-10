@@ -35,11 +35,23 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
     })();
   }, [instagramId]);
 
+  // filtered list for card render
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return media;
+    return media.filter((m) => {
+      const text = (m.caption ?? "").toLowerCase();
+      return text.includes(q) || m.id.toLowerCase().includes(q);
+    });
+  }, [media, query]);
+
   // suggestions (top 8 captions)
   const suggestions = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return media.filter(m => (m.caption ?? "").toLowerCase().includes(q)).slice(0, 8);
+    return media
+      .filter((m) => (m.caption ?? "").toLowerCase().includes(q))
+      .slice(0, 8);
   }, [media, query]);
 
   function selectMedia(m: Media) {
@@ -63,10 +75,10 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
     if (!suggestions.length) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setActiveIdx(i => (i + 1) % suggestions.length);
+      setActiveIdx((i) => (i + 1) % suggestions.length);
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setActiveIdx(i => (i - 1 + suggestions.length) % suggestions.length);
+      setActiveIdx((i) => (i - 1 + suggestions.length) % suggestions.length);
     } else if (e.key === "Enter") {
       e.preventDefault();
       const target = suggestions[activeIdx] ?? suggestions[0];
@@ -94,13 +106,26 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
           <h2 className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500">
             Media
           </h2>
-          {media.length > 0 && (
-            <span className="text-xs text-gray-500">{media.length} items</span>
+
+          {filtered.length > 0 && (
+            <span className="text-xs text-gray-500">
+              {query
+                ? `${filtered.length} of ${media.length}`
+                : `${media.length} items`}
+            </span>
           )}
+
           <div className="ml-auto w-full sm:w-96 relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <svg viewBox="0 0 24 24" className="h-5 w-5 text-gray-400">
-                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5" fill="none" />
+                <circle
+                  cx="11"
+                  cy="11"
+                  r="7"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  fill="none"
+                />
                 <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </span>
@@ -108,7 +133,11 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
               className="w-full rounded-full border border-gray-200 bg-gray-50 pl-10 pr-10 py-2 text-sm outline-none focus:ring-2 focus:ring-pink-500"
               placeholder="Search by caption…"
               value={query}
-              onChange={(e) => { setQuery(e.target.value); setOpen(true); setActiveIdx(-1); }}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setOpen(true);
+                setActiveIdx(-1);
+              }}
               onFocus={() => query && setOpen(true)}
               onKeyDown={onKeyDown}
             />
@@ -145,8 +174,12 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
                       role="option"
                       aria-selected={isActive}
                     >
-                      <span className="line-clamp-2">{s.caption || "(no caption)"}</span>
-                      <span className="block text-[11px] text-gray-500 mt-0.5">ID: {s.id}</span>
+                      <span className="line-clamp-2">
+                        {s.caption || "(no caption)"}
+                      </span>
+                      <span className="block text-[11px] text-gray-500 mt-0.5">
+                        ID: {s.id}
+                      </span>
                     </button>
                   );
                 })}
@@ -162,23 +195,28 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
           {loading && (
             <div className="space-y-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="h-16 rounded-2xl bg-white border border-gray-100 shadow-sm animate-pulse" />
+                <div
+                  key={i}
+                  className="h-16 rounded-2xl bg-white border border-gray-100 shadow-sm animate-pulse"
+                />
               ))}
             </div>
           )}
 
-          {!loading && media.length === 0 && (
-            <div className="text-sm text-gray-500">No media found.</div>
+          {!loading && filtered.length === 0 && (
+            <div className="text-sm text-gray-500">No matches.</div>
           )}
 
           {!loading &&
-            media.map((m) => {
+            filtered.map((m) => {
               const isSelected = m.id === selectedId;
               const isFlash = m.id === flashId;
               return (
                 <div
                   key={m.id}
-                  ref={(el) => { itemRefs.current[m.id] = el; }}
+                  ref={(el) => {
+                    itemRefs.current[m.id] = el;
+                  }}
                   className={[
                     "rounded-2xl border border-gray-100 bg-white shadow-sm transition",
                     "hover:shadow",
@@ -201,7 +239,9 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
                       <div className="text-sm font-medium text-gray-900 line-clamp-2">
                         {m.caption || "(no caption)"}
                       </div>
-                      <div className="mt-1 text-[11px] text-gray-500">ID: {m.id}</div>
+                      <div className="mt-1 text-[11px] text-gray-500">
+                        ID: {m.id}
+                      </div>
                     </div>
 
                     {/* action: open comments */}
@@ -216,11 +256,11 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
               );
             })}
 
-          {next && (
+          {/* {next && (
             <div className="pt-2 text-xs text-gray-500">
               More available via paging (add <code>?after=…</code> for Load more).
             </div>
-          )}
+          )} */}
         </div>
 
         {error && <div className="mt-4 text-sm text-red-600">{error}</div>}

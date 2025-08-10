@@ -38,6 +38,13 @@ export default function AllCommentsPage({ mediaId }: { mediaId: string }) {
     <div className="min-h-screen bg-[#FAFAFA] p-6">
       <h2 className="text-xl font-semibold mb-3">
         All comments (DB) • <span className="text-pink-600">{mediaId}</span>
+        <span className="ml-4 text-gray-600 text-lg">
+          {repliedFilter === "false"
+            ? `Unreplied: ${rows.length}`
+            : repliedFilter === "true"
+              ? `Replied: ${rows.length}`
+              : `Total: ${rows.length}`}
+        </span>
       </h2>
 
       {/* controls */}

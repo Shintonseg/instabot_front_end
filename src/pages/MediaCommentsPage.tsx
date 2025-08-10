@@ -132,6 +132,9 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
           <h2 className="text-xl font-semibold">
             Comments for media{" "}
             <span className="text-pink-600">{mediaId}</span>
+            <span className="ml-4 text-gray-600 text-lg">
+              Total: {comments.length}
+            </span>
           </h2>
           {caption && (
             <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap break-words">
@@ -206,6 +209,12 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
                     type="text"
                     value={replyMap[c.commentId] ?? ""}
                     onChange={(e) => handleChange(c.commentId, e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !sending && replyMap[c.commentId]?.trim()) {
+                        e.preventDefault();
+                        handleSend(c.commentId);
+                      }
+                    }}
                     placeholder="Reply…"
                     className="flex-1 rounded-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 outline-none"
                   />
