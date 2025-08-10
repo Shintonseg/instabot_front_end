@@ -2,6 +2,12 @@
 export interface InstagramMedia {
   id: string;
   caption: string | null;
+
+  // new (ask Graph API for: id,caption,media_type,media_url,thumbnail_url,permalink)
+  media_type?: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
+  media_url?: string | null;       // image URL or video file URL
+  thumbnail_url?: string | null;   // video preview image
+  permalink?: string | null;
 }
 
 export interface InstagramMediaResponseDto {
@@ -19,6 +25,12 @@ export interface InstagramMediaResponseDto {
 export type Media = {
   id: string;
   caption?: string | null;
+
+  // mirror the useful fields for UI
+  media_type?: "IMAGE" | "VIDEO" | "CAROUSEL_ALBUM";
+  media_url?: string | null;
+  thumbnail_url?: string | null;
+  permalink?: string | null;
 };
 
 export type Page<T> = {

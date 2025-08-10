@@ -1,12 +1,25 @@
 import { api } from "../lib/apiClient";
 import type {
-  InstagramMediaResponseDto,Media,Page,CommentReplyPage,ReplyRequestDto
+  InstagramMediaResponseDto,
+  Media,
+  Page,
+  CommentReplyPage,
+  ReplyRequestDto,
 } from "../types/instagram";
 
 // Adapt backend DTO -> UI Page<Media>
 function adaptMediaPage(dto: InstagramMediaResponseDto): Page<Media> {
   return {
-    items: (dto.data ?? []).map(m => ({ id: m.id, caption: m.caption ?? null })),
+    items: (dto.data ?? []).map((m) => ({
+      id: m.id,
+      caption: m.caption ?? null,
+
+      // NEW: carry URLs/type if backend provides them (safe if missing)
+      media_type: m.media_type ?? undefined,
+      media_url: m.media_url ?? undefined,
+      thumbnail_url: m.thumbnail_url ?? undefined,
+      permalink: m.permalink ?? undefined,
+    })),
     next: dto.paging?.cursors?.after ?? dto.paging?.next ?? null,
   };
 }
@@ -28,7 +41,12 @@ export async function fetchAndStoreAllComments(mediaId: string, limit = 25) {
 }
 
 // new: list all comments from DB (needs backend endpoint added)
-export async function fetchAllCommentsFromDb(mediaId: string, page = 0, size = 25, replied?: boolean) {
+export async function fetchAllCommentsFromDb(
+  mediaId: string,
+  page = 0,
+  size = 25,
+  replied?: boolean
+) {
   const { data } = await api.get<CommentReplyPage>(`/auto/comments`, {
     params: { mediaId, page, size, replied },
   });
@@ -36,11 +54,14 @@ export async function fetchAllCommentsFromDb(mediaId: string, page = 0, size = 2
 }
 
 // Get unreplied comments for a media
-export async function fetchUnrepliedComments(mediaId: string, page = 0, size = 25) {
-  const { data } = await api.get<CommentReplyPage>(
-    `/auto/comments/unreplied`,
-    { params: { mediaId, page, size } }
-  );
+export async function fetchUnrepliedComments(
+  mediaId: string,
+  page = 0,
+  size = 25
+) {
+  const { data } = await api.get<CommentReplyPage>(`/auto/comments/unreplied`, {
+    params: { mediaId, page, size },
+  });
   return data;
 }
 
@@ -52,7 +73,11 @@ export async function postCommentReply(commentId: string, message: string) {
 }
 
 // Auto-reply pending comments (global/process-wide)
-export async function autoReplyPending(limit: number, commentKeyword: string, replyMessage: string) {
+export async function autoReplyPending(
+  limit: number,
+  commentKeyword: string,
+  replyMessage: string
+) {
   const { data } = await api.post<{ processed: number }>(
     `/auto/comments/reply`,
     null, // body is not used; params are in query

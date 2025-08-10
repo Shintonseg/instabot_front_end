@@ -14,11 +14,9 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [flashId, setFlashId] = useState<string | null>(null);
 
-  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const navigate = useNavigate();
+  const gridRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -35,7 +33,7 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
     })();
   }, [instagramId]);
 
-  // filtered list for card render
+  // filtered list for grid
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return media;
@@ -54,19 +52,6 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
       .slice(0, 8);
   }, [media, query]);
 
-  function selectMedia(m: Media) {
-    setSelectedId(m.id);
-    setOpen(false);
-    setQuery(m.caption ?? "");
-    const node = itemRefs.current[m.id];
-    if (node) {
-      node.scrollIntoView({ behavior: "smooth", block: "center" });
-      setFlashId(m.id);
-      setTimeout(() => setFlashId(null), 900);
-    }
-    navigate(`/media/${m.id}`, { state: { caption: m.caption ?? "" } });
-  }
-
   function onKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (!open && (e.key === "ArrowDown" || e.key === "ArrowUp")) {
       setOpen(true);
@@ -82,50 +67,42 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
     } else if (e.key === "Enter") {
       e.preventDefault();
       const target = suggestions[activeIdx] ?? suggestions[0];
-      if (target) selectMedia(target);
+      if (target) handleOpen(target);
     } else if (e.key === "Escape") {
       setOpen(false);
     }
+  }
+
+  function handleOpen(m: Media) {
+    navigate(`/media/${m.id}`, { state: { caption: m.caption ?? "" } });
   }
 
   function clearSearch() {
     setQuery("");
     setOpen(false);
     setActiveIdx(-1);
+    gridRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }
-
-  // tiny helper for avatar initials
-  const initials = (m: Media) =>
-    (m.caption?.trim()?.[0] ?? m.id.slice(-2)).toString().toUpperCase();
 
   return (
     <section className="min-h-screen bg-[#FAFAFA]">
       {/* Top bar with IG gradient title + pill search */}
       <div className="sticky top-0 z-10 backdrop-blur bg-white/80 border-b">
-        <div className="mx-auto max-w-2xl px-4 py-3 flex items-center gap-3">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center gap-3">
           <h2 className="text-lg font-semibold bg-clip-text text-transparent bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500">
-            Media
+            Reels
           </h2>
 
           {filtered.length > 0 && (
             <span className="text-xs text-gray-500">
-              {query
-                ? `${filtered.length} of ${media.length}`
-                : `${media.length} items`}
+              {query ? `${filtered.length} of ${media.length}` : `${media.length} items`}
             </span>
           )}
 
           <div className="ml-auto w-full sm:w-96 relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2">
               <svg viewBox="0 0 24 24" className="h-5 w-5 text-gray-400">
-                <circle
-                  cx="11"
-                  cy="11"
-                  r="7"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  fill="none"
-                />
+                <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="1.5" fill="none" />
                 <path d="M20 20l-3-3" stroke="currentColor" strokeWidth="1.5" />
               </svg>
             </span>
@@ -170,16 +147,12 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
                       ].join(" ")}
                       onMouseEnter={() => setActiveIdx(idx)}
                       onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => selectMedia(s)}
+                      onClick={() => handleOpen(s)}
                       role="option"
                       aria-selected={isActive}
                     >
-                      <span className="line-clamp-2">
-                        {s.caption || "(no caption)"}
-                      </span>
-                      <span className="block text-[11px] text-gray-500 mt-0.5">
-                        ID: {s.id}
-                      </span>
+                      <span className="line-clamp-2">{s.caption || "(no caption)"}</span>
+                      <span className="block text-[11px] text-gray-500 mt-0.5">ID: {s.id}</span>
                     </button>
                   );
                 })}
@@ -189,79 +162,79 @@ export default function MediaList({ instagramId }: { instagramId: string }) {
         </div>
       </div>
 
-      {/* Feed list */}
-      <div className="mx-auto max-w-2xl px-4 py-4">
-        <div className="space-y-3">
-          {loading && (
-            <div className="space-y-3">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="h-16 rounded-2xl bg-white border border-gray-100 shadow-sm animate-pulse"
-                />
-              ))}
-            </div>
-          )}
+      {/* Reels grid */}
+      <div ref={gridRef} className="mx-auto max-w-6xl px-4 py-4">
+        {loading && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="relative rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+                <div className="w-full pb-[177.78%] bg-gray-100 animate-pulse" />
+              </div>
+            ))}
+          </div>
+        )}
 
-          {!loading && filtered.length === 0 && (
-            <div className="text-sm text-gray-500">No matches.</div>
-          )}
+        {!loading && filtered.length === 0 && (
+          <div className="text-sm text-gray-500">No matches.</div>
+        )}
 
-          {!loading &&
-            filtered.map((m) => {
-              const isSelected = m.id === selectedId;
-              const isFlash = m.id === flashId;
+        {!loading && filtered.length > 0 && (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+            {filtered.map((m) => {
+              const thumb = m.thumbnail_url ?? m.media_url ?? undefined;
               return (
-                <div
+                <button
                   key={m.id}
-                  ref={(el) => {
-                    itemRefs.current[m.id] = el;
-                  }}
-                  className={[
-                    "rounded-2xl border border-gray-100 bg-white shadow-sm transition",
-                    "hover:shadow",
-                    isSelected ? "ring-2 ring-pink-200" : "",
-                    isFlash ? "animate-pulse" : "",
-                  ].join(" ")}
+                  onClick={() => handleOpen(m)}
+                  className="group relative overflow-hidden rounded-2xl bg-black/5 focus:outline-none focus-visible:ring-2 focus-visible:ring-pink-400"
+                  title={m.caption ?? ""}
                 >
-                  <div className="p-4 flex items-start gap-3">
-                    {/* IG-like avatar ring */}
-                    <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-[2px] shrink-0">
-                      <div className="h-full w-full rounded-full bg-white grid place-items-center">
-                        <div className="h-9 w-9 rounded-full bg-gray-200 grid place-items-center text-xs font-semibold text-gray-700">
-                          {initials(m)}
+                  {/* 9:16 aspect without plugin */}
+                  <div className="relative w-full pb-[177.78%]">
+                    {thumb ? (
+                      <img
+                        src={thumb}
+                        alt={m.caption || "Media"}
+                        loading="lazy"
+                        className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 grid place-items-center text-xs text-gray-500 bg-gray-100">
+                        No preview
+                      </div>
+                    )}
+
+                    {/* video badge */}
+                    {m.media_type === "VIDEO" && (
+                      <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-1 text-[11px] text-white">
+                        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                        Video
+                      </span>
+                    )}
+
+                    {/* gradient + caption */}
+                    <div className="absolute inset-x-0 bottom-0 p-2">
+                      <div className="rounded-xl bg-gradient-to-t from-black/70 via-black/30 to-transparent p-2">
+                        <div className="line-clamp-2 text-left text-[12px] leading-snug text-white drop-shadow">
+                          {m.caption || "(no caption)"}
                         </div>
                       </div>
                     </div>
-
-                    {/* content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900 line-clamp-2">
-                        {m.caption || "(no caption)"}
-                      </div>
-                      <div className="mt-1 text-[11px] text-gray-500">
-                        ID: {m.id}
-                      </div>
-                    </div>
-
-                    {/* action: open comments */}
-                    <button
-                      onClick={() => selectMedia(m)}
-                      className="ml-2 rounded-full px-3 py-1 text-sm font-medium text-pink-600 hover:bg-pink-50"
-                    >
-                      Comments
-                    </button>
                   </div>
-                </div>
+                </button>
               );
             })}
+          </div>
+        )}
 
-          {/* {next && (
-            <div className="pt-2 text-xs text-gray-500">
-              More available via paging (add <code>?after=…</code> for Load more).
-            </div>
-          )} */}
-        </div>
+        {next && (
+          <div className="pt-3 text-xs text-gray-500">
+            Load more.
+          </div>
+        )}
 
         {error && <div className="mt-4 text-sm text-red-600">{error}</div>}
       </div>
