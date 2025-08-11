@@ -1,6 +1,6 @@
 // src/pages/MediaCommentsPage.tsx
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { fetchUnrepliedComments, postCommentReply } from "../services/instagram";
 import type { CommentReplyRecord } from "../types/instagram";
 
@@ -58,7 +58,7 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
       setReplyMap((prev) => ({ ...prev, [commentId]: "" }));
       pushToast(`Reply sent to ${usernameByCommentId(commentId)}`);
       await loadComments();
-    } catch (err: any) {
+    } catch {
       pushToast(`Failed to send to ${usernameByCommentId(commentId)}`, "warn");
     } finally {
       setSending(false);
@@ -110,7 +110,7 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
     (name?.trim()?.slice(0, 2) || "US").toUpperCase();
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] p-6">
+    <div className="min-h-screen bg-[#FAFAFA]">
       {/* Toasts */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
         {toasts.map((t) => (
@@ -126,24 +126,18 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between mb-3">
-        <div className="max-w-3xl">
-          <h2 className="text-xl font-semibold">
-            Comments for media{" "}
-            <span className="text-pink-600">{mediaId}</span>
-            <span className="ml-4 text-gray-600 text-lg">
-            </span>
-          </h2>
-          {caption && (
-            <p className="mt-1 text-sm text-gray-700 whitespace-pre-wrap break-words">
-              {caption}
-            </p>
-          )}
-        </div>
-
-        {/* Actions: Send All */}
-        <div className="flex items-center gap-2">
+      {/* Header w/ Back, title, media id and Send All */}
+      <div className="mx-auto max-w-[1100px] px-4 py-6 flex items-center gap-3">
+        <Link to=".." className="text-sm text-gray-500 hover:text-gray-700">
+          ← Back
+        </Link>
+        <h1 className="text-[22px] font-semibold bg-gradient-to-r from-pink-500 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
+          Unreplied
+        </h1>
+        <div className="ml-auto flex items-center gap-3">
+          <div className="text-sm text-gray-500">
+            Media: <span className="text-[#c2185b] font-medium">{mediaId}</span>
+          </div>
           <button
             onClick={handleSendAll}
             disabled={!canSendAll || sending}
@@ -160,80 +154,100 @@ export default function MediaCommentsPage({ mediaId }: { mediaId: string }) {
         </div>
       </div>
 
+      {/* Caption under header (optional) */}
+      {caption && (
+        <div className="mx-auto max-w-[1100px] px-4 -mt-4 mb-4">
+          <p className="text-sm text-gray-700 whitespace-pre-wrap break-words">
+            {caption}
+          </p>
+        </div>
+      )}
+
       {/* List (IG-style cards) */}
-      <div className="max-w-3xl space-y-3">
-        {loading && (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-24 rounded-2xl bg-white border border-gray-100 shadow-sm animate-pulse"
-              />
-            ))}
-          </div>
-        )}
+      <div className="mx-auto max-w-[1100px] px-4 pb-8">
+        <div className="max-w-3xl space-y-3">
+          {loading && (
+            <div className="space-y-3">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="h-24 rounded-2xl bg-white border border-gray-100 shadow-sm animate-pulse"
+                />
+              ))}
+            </div>
+          )}
 
-        {!loading && error && (
-          <div className="text-sm text-red-600">{error}</div>
-        )}
+          {!loading && error && (
+            <div className="text-sm text-red-600">{error}</div>
+          )}
 
-        {!loading && !error && comments.length === 0 && (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 shadow-sm">
-            ✅ No unreplied comments found.
-          </div>
-        )}
+          {!loading && !error && comments.length === 0 && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-900 px-4 py-3 shadow-sm">
+              ✅ No unreplied comments found.
+            </div>
+          )}
 
-        {!loading && !error && comments.map((c) => (
-          <article key={c.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-            <div className="flex items-start gap-3">
-              {/* IG-like avatar ring */}
-              <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-[2px] shrink-0">
-                <div className="h-full w-full rounded-full bg-white grid place-items-center">
-                  <div className="h-9 w-9 rounded-full bg-gray-200 grid place-items-center text-xs font-semibold text-gray-700">
-                    {initials(c.username)}
+          {!loading &&
+            !error &&
+            comments.map((c) => (
+              <article
+                key={c.id}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4"
+              >
+                <div className="flex items-start gap-3">
+                  {/* IG-like avatar ring */}
+                  <div className="h-10 w-10 rounded-full bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 p-[2px] shrink-0">
+                    <div className="h-full w-full rounded-full bg-white grid place-items-center">
+                      <div className="h-9 w-9 rounded-full bg-gray-200 grid place-items-center text-xs font-semibold text-gray-700">
+                        {initials(c.username)}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm">
+                      <span className="font-semibold">{c.username}</span>{" "}
+                      <span className="text-gray-800">{c.text}</span>
+                    </div>
+
+                    {/* reply input row */}
+                    <div className="mt-3 flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={replyMap[c.commentId] ?? ""}
+                        onChange={(e) => handleChange(c.commentId, e.target.value)}
+                        onKeyDown={(e) => {
+                          if (
+                            e.key === "Enter" &&
+                            !sending &&
+                            replyMap[c.commentId]?.trim()
+                          ) {
+                            e.preventDefault();
+                            handleSend(c.commentId);
+                          }
+                        }}
+                        placeholder="Reply…"
+                        className="flex-1 rounded-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 outline-none"
+                      />
+                      <button
+                        onClick={() => handleSend(c.commentId)}
+                        disabled={sending || !(replyMap[c.commentId]?.trim())}
+                        className={[
+                          "px-4 py-2 rounded-full text-white text-sm font-medium whitespace-nowrap",
+                          replyMap[c.commentId]?.trim()
+                            ? "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:brightness-95"
+                            : "bg-gray-300 cursor-not-allowed",
+                        ].join(" ")}
+                      >
+                        Send
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              {/* content */}
-              <div className="flex-1 min-w-0">
-                <div className="text-sm">
-                  <span className="font-semibold">{c.username}</span>{" "}
-                  <span className="text-gray-800">{c.text}</span>
-                </div>
-
-                {/* reply input row */}
-                <div className="mt-3 flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={replyMap[c.commentId] ?? ""}
-                    onChange={(e) => handleChange(c.commentId, e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !sending && replyMap[c.commentId]?.trim()) {
-                        e.preventDefault();
-                        handleSend(c.commentId);
-                      }
-                    }}
-                    placeholder="Reply…"
-                    className="flex-1 rounded-full border border-gray-300 px-3 py-2 text-sm focus:ring-2 focus:ring-pink-500 outline-none"
-                  />
-                  <button
-                    onClick={() => handleSend(c.commentId)}
-                    disabled={sending || !(replyMap[c.commentId]?.trim())}
-                    className={[
-                      "px-4 py-2 rounded-full text-white text-sm font-medium whitespace-nowrap",
-                      replyMap[c.commentId]?.trim()
-                        ? "bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 hover:brightness-95"
-                        : "bg-gray-300 cursor-not-allowed",
-                    ].join(" ")}
-                  >
-                    Send
-                  </button>
-                </div>
-              </div>
-            </div>
-          </article>
-        ))}
+              </article>
+            ))}
+        </div>
       </div>
     </div>
   );
